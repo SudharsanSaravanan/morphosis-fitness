@@ -10,6 +10,7 @@ import {
   Paper,
 } from "@mui/material";
 import { motion } from 'framer-motion';
+import { callGroqApi } from '../utils/groqApi'; // Import the modular API function
 
 const DietPlan = () => {
   const [dietWeight, setDietWeight] = useState("");
@@ -23,6 +24,7 @@ const DietPlan = () => {
   const [dietPreferences, setDietPreferences] = useState("");
   const [dietPlan, setDietPlan] = useState("");
   const [dietLoading, setDietLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Memoized event handlers
   const handleWeightChange = useCallback((e) => {
@@ -61,15 +63,42 @@ const DietPlan = () => {
     setDietPreferences(e.target.value);
   }, []);
 
-  const handleGenerateDiet = useCallback(() => {
+  const handleGenerateDiet = useCallback(async () => {
     setDietLoading(true);
-    setTimeout(() => {
-      setDietPlan(
-        "Day 1: Breakfast: Oatmeal (200kcal)\nLunch: Grilled Chicken Salad (350kcal)\nSnack: Almonds (100kcal)\nDinner: Salmon with Veggies (400kcal)\n...etc for a 7-day plan"
-      );
+    setError(null);
+    setDietPlan("");
+
+    // Construct a detailed prompt for Groq
+    const prompt = `
+      You are an expert nutritionist. Generate a detailed, personalized 7-day diet plan for a user with the following details:
+      - Current Weight: ${dietWeight || 'Not specified'} kg
+      - Height: ${dietHeight || 'Not specified'} cm
+      - Target Weight: ${dietTargetWeight || 'Not specified'} kg
+      - Lifestyle: ${dietLifestyle || 'Not specified'}
+      - Fasting Preference: ${dietWantFast || 'Not specified'}
+      - Age: ${dietAge || 'Not specified'}
+      - Gender: ${dietGender || 'Not specified'}
+      - Allergies: ${dietAllergies || 'None'}
+      - Dietary Preferences: ${dietPreferences || 'None'}
+
+      Provide a realistic and balanced diet plan for one week, including:
+      - A day-by-day schedule (Day 1 to Day 7).
+      - Specific meals for breakfast, lunch, dinner, and snacks (if applicable), including portion sizes and estimated calories.
+      - Consideration of the user's allergies and dietary preferences (e.g., vegetarian, vegan, etc.).
+      - Hydration recommendations (e.g., water intake).
+      - Tips for meal preparation and nutritional balance.
+      Format the plan clearly with headings for each day (e.g., ## Day 1) and bullet points for meals and details. Ensure the plan is tailored to the user's inputs and suitable for their lifestyle and goals (e.g., weight loss, maintenance, muscle gain).
+    `;
+
+    try {
+      const plan = await callGroqApi(prompt);
+      setDietPlan(plan);
+    } catch (err) {
+      setError(err.message || 'An error occurred while generating the diet plan.');
+    } finally {
       setDietLoading(false);
-    }, 2000);
-  }, []);
+    }
+  }, [dietWeight, dietHeight, dietTargetWeight, dietLifestyle, dietWantFast, dietAge, dietGender, dietAllergies, dietPreferences]);
 
   return (
     <Box
@@ -199,6 +228,8 @@ const DietPlan = () => {
               value={dietWantFast}
               onChange={handleWantFastChange}
               variant="outlined"
+              multiline
+              rows={3}
               InputProps={{ style: { color: "#fff" } }}
               InputLabelProps={{ style: { color: "#aaa" } }}
               sx={{
@@ -250,6 +281,8 @@ const DietPlan = () => {
               value={dietAllergies}
               onChange={handleAllergiesChange}
               variant="outlined"
+              multiline
+              rows={3}
               InputProps={{ style: { color: "#fff" } }}
               InputLabelProps={{ style: { color: "#aaa" } }}
               sx={{
@@ -261,12 +294,14 @@ const DietPlan = () => {
               }}
             />
             <TextField
-              label="Preferences (vegetarian, etc.)"
+              label="Preferences (vegetarian, vegan, etc.)"
               fullWidth
               margin="normal"
               value={dietPreferences}
               onChange={handlePreferencesChange}
               variant="outlined"
+              multiline
+              rows={3}
               InputProps={{ style: { color: "#fff" } }}
               InputLabelProps={{ style: { color: "#aaa" } }}
               sx={{
@@ -296,8 +331,9 @@ const DietPlan = () => {
                 },
               }}
               onClick={handleGenerateDiet}
+              disabled={dietLoading}
             >
-              Generate Diet Plan
+              {dietLoading ? 'Generating...' : 'Generate Diet Plan'}
             </Button>
           </Box>
         </motion.div>
@@ -318,7 +354,7 @@ const DietPlan = () => {
               minHeight: { xs: '200px', md: '600px' },
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: dietPlan || dietLoading ? 'flex-start' : 'center',
+              justifyContent: dietPlan || dietLoading || error ? 'flex-start' : 'center',
               alignItems: 'center',
             }}
           >
@@ -329,6 +365,17 @@ const DietPlan = () => {
                   Generating your custom diet plan...
                 </Typography>
               </Box>
+            ) : error ? (
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "#f44336",
+                  fontFamily: "'Roboto', sans-serif",
+                  textAlign: "center",
+                }}
+              >
+                {error}
+              </Typography>
             ) : dietPlan ? (
               <Paper
                 elevation={3}
