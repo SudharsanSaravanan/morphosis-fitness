@@ -10,6 +10,7 @@ import {
   Paper,
 } from "@mui/material";
 import { motion } from 'framer-motion';
+import { callGroqApi } from '../utils/groqApi'; // Import the modular API function
 
 const WorkoutPlan = () => {
   const [workoutGoal, setWorkoutGoal] = useState("");
@@ -20,6 +21,7 @@ const WorkoutPlan = () => {
   const [workoutType, setWorkoutType] = useState("");
   const [workoutPlan, setWorkoutPlan] = useState("");
   const [workoutLoading, setWorkoutLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Memoized event handlers
   const handleGoalChange = useCallback((e) => {
@@ -46,15 +48,39 @@ const WorkoutPlan = () => {
     setWorkoutType(e.target.value);
   }, []);
 
-  const handleGenerateWorkout = useCallback(() => {
+  const handleGenerateWorkout = useCallback(async () => {
     setWorkoutLoading(true);
-    setTimeout(() => {
-      setWorkoutPlan(
-        "Day 1: Push (Chest, Shoulders, Triceps)\nDay 2: Pull (Back, Biceps)\nDay 3: Legs & Core\n...etc for a 7-day split"
-      );
+    setError(null);
+    setWorkoutPlan("");
+
+    // Construct a detailed prompt for Groq
+    const prompt = `
+      You are an expert fitness coach. Generate a detailed, personalized 7-day workout plan for a user with the following details:
+      - Goal: ${workoutGoal || 'General fitness improvement'}
+      - Current Weight: ${workoutWeight || 'Not specified'} kg
+      - Height: ${workoutHeight || 'Not specified'} cm
+      - Target Weight: ${workoutTargetWeight || 'Not specified'} kg
+      - Workout Type: ${workoutType || 'Balanced (strength and cardio)'}
+      - Additional Notes: ${workoutNote || 'None'}
+
+      Provide a realistic and safe workout plan for one week, including:
+      - A day-by-day schedule (Day 1 to Day 7).
+      - Specific exercises with sets, reps, and weights (if applicable, estimate based on inputs).
+      - At least one rest or active recovery day.
+      - Warm-up and cool-down recommendations.
+      - Tips for progression and safety.
+      Format the plan clearly with headings for each day (e.g., ## Day 1: Chest and Triceps) and bullet points for exercises and details. Ensure the plan is tailored to the user's inputs and suitable for their goals and workout type (e.g., cut, bulk, lean bulk).
+    `;
+
+    try {
+      const plan = await callGroqApi(prompt);
+      setWorkoutPlan(plan);
+    } catch (err) {
+      setError(err.message || 'An error occurred while generating the workout plan.');
+    } finally {
       setWorkoutLoading(false);
-    }, 2000);
-  }, []);
+    }
+  }, [workoutGoal, workoutWeight, workoutHeight, workoutNote, workoutTargetWeight, workoutType]);
 
   return (
     <Box
@@ -234,8 +260,9 @@ const WorkoutPlan = () => {
                 },
               }}
               onClick={handleGenerateWorkout}
+              disabled={workoutLoading}
             >
-              Generate Workout Plan
+              {workoutLoading ? 'Generating...' : 'Generate Workout Plan'}
             </Button>
           </Box>
         </motion.div>
@@ -256,7 +283,7 @@ const WorkoutPlan = () => {
               minHeight: { xs: '200px', md: '600px' },
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: workoutPlan || workoutLoading ? 'flex-start' : 'center',
+              justifyContent: workoutPlan || workoutLoading || error ? 'flex-start' : 'center',
               alignItems: 'center',
             }}
           >
@@ -267,6 +294,17 @@ const WorkoutPlan = () => {
                   Generating your custom workout plan...
                 </Typography>
               </Box>
+            ) : error ? (
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "#f44336",
+                  fontFamily: "'Roboto', sans-serif",
+                  textAlign: "center",
+                }}
+              >
+                {error}
+              </Typography>
             ) : workoutPlan ? (
               <Paper
                 elevation={3}
