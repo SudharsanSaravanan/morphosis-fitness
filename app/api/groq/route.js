@@ -14,7 +14,7 @@ export async function POST(req) {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const chatCompletion = await client.chat.completions.create({
-      model: "llama-3.1-70b-versatile", // updated model
+      model: "mixtral-8x7b-32768", // updated model
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 2000, // allow much longer responses
