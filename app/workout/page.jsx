@@ -10,6 +10,7 @@ import {
   Paper,
 } from "@mui/material";
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { callGroqApi } from '../utils/groqApi'; // Import the modular API function
 
 const WorkoutPlan = () => {
@@ -22,6 +23,7 @@ const WorkoutPlan = () => {
   const [workoutPlan, setWorkoutPlan] = useState("");
   const [workoutLoading, setWorkoutLoading] = useState(false);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   // Memoized event handlers
   const handleGoalChange = useCallback((e) => {
@@ -48,6 +50,10 @@ const WorkoutPlan = () => {
     setWorkoutType(e.target.value);
   }, []);
 
+  const handleBackClick = useCallback(() => {
+    router.push('/');
+  }, [router]);
+
   const handleGenerateWorkout = useCallback(async () => {
     setWorkoutLoading(true);
     setError(null);
@@ -69,7 +75,7 @@ const WorkoutPlan = () => {
       - At least one rest or active recovery day.
       - Warm-up and cool-down recommendations.
       - Tips for progression and safety.
-      Format the plan clearly with headings for each day (e.g., ## Day 1: Chest and Triceps) and bullet points for exercises and details. Ensure the plan is tailored to the user's inputs and suitable for their goals and workout type (e.g., cut, bulk, lean bulk).
+      Format the plan clearly with headings for each day (e.g., Day 1: Chest and Triceps) and a "Before Starting" section using plain text without Markdown symbols like **, *, or +. Use <span style="font-size: 18px;"> for headings (including "Before Starting") and <span style="font-size: 14px;"> for all other text, including bullet points, to ensure consistent font sizes. Use • for bullet points. Avoid any other HTML or Markdown formatting to ensure the output renders correctly in a React component.
     `;
 
     try {
@@ -264,6 +270,31 @@ const WorkoutPlan = () => {
             >
               {workoutLoading ? 'Generating...' : 'Generate Workout Plan'}
             </Button>
+
+            <Button
+              variant="outlined"
+              fullWidth
+              sx={{
+                mt: 2,
+                py: 1.5,
+                borderColor: "#1DB954",
+                color: "#1DB954",
+                fontWeight: "bold",
+                textTransform: "none",
+                fontSize: "1.1rem",
+                borderRadius: "50px",
+                boxShadow: "0 0 10px rgba(29,185,84,0.4)",
+                "&:hover": {
+                  backgroundColor: "rgba(29,185,84,0.1)",
+                  borderColor: "#1ed760",
+                  color: "#1ed760",
+                  boxShadow: "0 0 15px rgba(29,185,84,0.6)",
+                },
+              }}
+              onClick={handleBackClick}
+            >
+              Back to Home
+            </Button>
           </Box>
         </motion.div>
 
@@ -316,13 +347,13 @@ const WorkoutPlan = () => {
                   color: "#fff",
                   whiteSpace: "pre-wrap",
                   fontFamily: "'Fira Code', monospace",
-                  fontSize: "0.95rem",
+                  fontSize: "14px",
                   maxHeight: "500px",
                   overflowY: "auto",
                   boxShadow: "0 0 15px rgba(0,0,0,0.6)",
                 }}
               >
-                {workoutPlan}
+                <div dangerouslySetInnerHTML={{ __html: workoutPlan }} />
               </Paper>
             ) : (
               <Typography

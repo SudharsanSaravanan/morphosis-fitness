@@ -10,6 +10,7 @@ import {
   Paper,
 } from "@mui/material";
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { callGroqApi } from '../utils/groqApi'; // Import the modular API function
 
 const DietPlan = () => {
@@ -25,6 +26,7 @@ const DietPlan = () => {
   const [dietPlan, setDietPlan] = useState("");
   const [dietLoading, setDietLoading] = useState(false);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   // Memoized event handlers
   const handleWeightChange = useCallback((e) => {
@@ -63,6 +65,10 @@ const DietPlan = () => {
     setDietPreferences(e.target.value);
   }, []);
 
+  const handleBackClick = useCallback(() => {
+    router.push('/');
+  }, [router]);
+
   const handleGenerateDiet = useCallback(async () => {
     setDietLoading(true);
     setError(null);
@@ -74,20 +80,21 @@ const DietPlan = () => {
       - Current Weight: ${dietWeight || 'Not specified'} kg
       - Height: ${dietHeight || 'Not specified'} cm
       - Target Weight: ${dietTargetWeight || 'Not specified'} kg
-      - Lifestyle: ${dietLifestyle || 'Not specified'}
-      - Fasting Preference: ${dietWantFast || 'Not specified'}
+      - Lifestyle: ${dietLifestyle || 'Moderately active'}
+      - Fasting Preference: ${dietWantFast || 'None'}
       - Age: ${dietAge || 'Not specified'}
       - Gender: ${dietGender || 'Not specified'}
       - Allergies: ${dietAllergies || 'None'}
       - Dietary Preferences: ${dietPreferences || 'None'}
 
       Provide a realistic and balanced diet plan for one week, including:
+      - A "Before Starting" section with general advice such as consulting a healthcare professional, the importance of hydration (at least 8 cups or 64 ounces of water daily), meal preparation tips, eating a variety of whole foods, practicing portion control, and being consistent and patient.
       - A day-by-day schedule (Day 1 to Day 7).
-      - Specific meals for breakfast, lunch, dinner, and snacks (if applicable), including portion sizes and estimated calories.
-      - Consideration of the user's allergies and dietary preferences (e.g., vegetarian, vegan, etc.).
-      - Hydration recommendations (e.g., water intake).
-      - Tips for meal preparation and nutritional balance.
-      Format the plan clearly with headings for each day (e.g., ## Day 1) and bullet points for meals and details. Ensure the plan is tailored to the user's inputs and suitable for their lifestyle and goals (e.g., weight loss, maintenance, muscle gain).
+      - Specific meals for breakfast, lunch, dinner, and snacks (if applicable), including portion sizes, estimated calories, and macronutrient breakdowns (protein, carbs, fats).
+      - Consideration of the user's allergies and dietary preferences (e.g., vegetarian, vegan).
+      - Hydration recommendations for each day (e.g., water intake).
+      - Tips for meal preparation and nutritional balance at the end of the plan.
+      Format the plan clearly with headings for each day (e.g., Day 1) and the "Before Starting" section using plain text without Markdown symbols like **, *, or +. Use <span style="font-size: 18px;"> for all headings (including "Before Starting" and each day) and <span style="font-size: 14px;"> for all other text, including bullet points, to ensure consistent font sizes. Use • for bullet points. Avoid any other HTML or Markdown formatting to ensure the output renders correctly in a React component. Ensure the entire 7-day plan is generated without truncation, including all days, meals, and tips.
     `;
 
     try {
@@ -335,6 +342,31 @@ const DietPlan = () => {
             >
               {dietLoading ? 'Generating...' : 'Generate Diet Plan'}
             </Button>
+
+            <Button
+              variant="outlined"
+              fullWidth
+              sx={{
+                mt: 2,
+                py: 1.5,
+                borderColor: "#1DB954",
+                color: "#1DB954",
+                fontWeight: "bold",
+                textTransform: "none",
+                fontSize: "1.1rem",
+                borderRadius: "50px",
+                boxShadow: "0 0 10px rgba(29,185,84,0.4)",
+                "&:hover": {
+                  backgroundColor: "rgba(29,185,84,0.1)",
+                  borderColor: "#1ed760",
+                  color: "#1ed760",
+                  boxShadow: "0 0 15px rgba(29,185,84,0.6)",
+                },
+              }}
+              onClick={handleBackClick}
+            >
+              Back to Home
+            </Button>
           </Box>
         </motion.div>
 
@@ -387,13 +419,13 @@ const DietPlan = () => {
                   color: "#fff",
                   whiteSpace: "pre-wrap",
                   fontFamily: "'Fira Code', monospace",
-                  fontSize: "0.95rem",
+                  fontSize: "14px",
                   maxHeight: "500px",
                   overflowY: "auto",
                   boxShadow: "0 0 15px rgba(0,0,0,0.6)",
                 }}
               >
-                {dietPlan}
+                <div dangerouslySetInnerHTML={{ __html: dietPlan }} />
               </Paper>
             ) : (
               <Typography
